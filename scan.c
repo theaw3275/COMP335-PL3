@@ -2,13 +2,134 @@
  * scan.c
  * Thea West, Guy Crickner
  * Description
- *    TODO!!
+ *    Scans a C minus (.cm) source file and produces a list of tokens.
  */
 
 # include <stdio.h>
 # include <ctype.h>
 # include <stdlib.h>
 # include <string.h>
+
+char c; /* current char */
+
+void emit_token(FILE *fpOut, char *name);
+
+void print_output(char *tokenFile, char *codeFile);
+
+void check_letters(FILE *fp, FILE *fpIn);
+
+void check_digits(FILE *fp, FILE *fpIn);
+
+int main(int argc, char **argv) {
+        FILE *fpIn;
+        fpIn = fopen(argv[1], "r");
+        if (!fpIn) return 1; /* something failed w/opening file */
+        FILE *fp;
+        char *outFile = "tokens.txt";
+        fp = fopen(outFile, "w");
+        if (!fp) return 1; /* something failed w/opening file */
+
+        c = getc(fpIn);
+        /* generalized loop for any lexeme */
+        while (c != EOF) {
+                if (isalpha(c)) { /* we have an letter: abc...xyzABC...XYZ */
+                        check_letters(fp, fpIn);
+                }
+                else if (isdigit(c)) { /* we have a digit: 0...9 */
+                        check_digits(fp, fpIn);
+                }
+                else if (c == ';'){
+                        emit_token(fp, "STMT-END");
+                        c = getc(fpIn);
+                }
+                else if (c == '&'){
+                        c = getc(fpIn);
+                        if (c == '&'){
+                                emit_token(fp, "AND");
+                                c = getc(fpIn);
+                        }
+                        else{
+                                emit_token(fp, "UNDEF");
+                        }
+                }
+                else if (c == '|'){
+                        c = getc(fpIn);
+                        if (c == '|'){
+                                emit_token(fp, "OR");
+                                c = getc(fpIn);
+                        }
+                        else{
+                                emit_token(fp, "UNDEF");
+                        }
+                }
+                else if (c == '+' || c == '-'){
+                        emit_token(fp, "ADD-OP");
+                        c = getc(fpIn);
+                }
+                else if (c == '*' || c == '/' || c == '%'){
+                        emit_token(fp, "MULT-OP");
+                        c = getc(fpIn);
+                }
+                else if (c == '='){
+                        emit_token(fp, "EQ-OP");
+                        c = getc(fpIn);
+                }
+                else if (c == '!'){
+                        c = getc(fpIn);
+                        if (c == '='){
+                                emit_token(fp, "EQ-OP");
+                                c = getc(fpIn);
+                        }
+                        else{
+                                emit_token(fp, "UNDEF");
+                        }
+                }
+                else if (c == '<' || c == '>'){
+                        emit_token(fp, "RELATIONAL-OP");
+                        c = getc(fpIn);
+                        if (c == '='){
+                                c = getc(fpIn);
+                        }
+                }
+                else if (c == ':'){
+                        c = getc(fpIn);
+                        if (c == '='){
+                                emit_token(fp, "ASSIGNMENT-OP");
+                                c = getc(fpIn);
+                        }
+                        else{
+                                emit_token(fp, "UNDEF");
+                        }
+                }
+                else if (c == '('){
+                        emit_token(fp, "OPEN-PAREN");
+                        c = getc(fpIn);
+                }
+                else if (c == ')'){
+                        emit_token(fp, "CLOSE-PAREN");
+                        c = getc(fpIn);
+                }
+                else if (c == ','){
+                        emit_token(fp, "COMMA");
+                        c = getc(fpIn);
+                }
+                else if (c == '\n'){
+                        emit_token(fp, "endl");
+                        c = getc(fpIn);
+                }
+                else if (isspace(c)){
+                        c = getc(fpIn);
+                }
+                else { /* undefined character */
+                        emit_token(fp, "UNDEF");
+                        c = getc(fpIn);
+                }
+        }
+        fclose(fpIn);
+        fclose(fp);
+        print_output(outFile, argv[1]);
+        return 0;
+}
 
 void emit_token(FILE *fpOut, char *name) {
         if (strcmp(name, "endl") == 0)
@@ -19,59 +140,48 @@ void emit_token(FILE *fpOut, char *name) {
         }
 }
 
-void print_output(char *tokenFile, char *codeFile);
-
-int main(int argc, char **argv) {
-    char c;
-    int inum = 0;
-    float fnum;
-    float decPlace = 0.1;
-    FILE *fpIn;
-    fpIn = fopen(argv[1], "r");
-    if (!fpIn) return 1; /* something failed w/opening file */
-    FILE *fp;
-    char *outFile = "tokens.txt";
-    fp = fopen(outFile, "w");
-    if (!fp) return 1; /* something failed w/opening file */
-
-    c = getc(fpIn);
-    /* generalized loop for any lexeme */
-    while (c != EOF) {
-        if (isalpha(c)) { /* we have an letter: abc...xyzABC...XYZ */
-                int cap = 20;
-	        int len = 0;
-	        char *s = (char *) malloc (cap * sizeof (char));
-	        if (!s) return 1; /* something failed w/allocation */ 
-                while (isalpha(c)) {
-	                if (len + 1 >= cap){ /* allocate more space if needed */
-		        	cap = cap + 20;
-		        	s = (char *) realloc(s, cap * sizeof (char));
-		        }
-                        s[len] = c;
-                        len++;
-                        c = getc(fpIn);
-                }
-                if (strcmp(s, "program") == 0)
-                    emit_token(fp, "PROGRAM");
-                else if (strcmp(s, "begin") == 0)
-                    emit_token(fp, "BEGIN");
-                else if (strcmp(s, "end") == 0)
-                    emit_token(fp, "END");
-                else if (strcmp(s, "int") == 0)
-                    emit_token(fp, "INT-TYPE");
-                else if (strcmp(s, "float") == 0)
-                    emit_token(fp, "FLOAT-TYPE");
-                else if (strcmp(s, "if") == 0)
-                    emit_token(fp, "IF");
-                else if (strcmp(s, "else") == 0)
-                    emit_token(fp, "ELSE");
-                else if (strcmp(s, "while") == 0)
-                    emit_token(fp, "WHILE");
-                else
-                    emit_token(fp, "ID");
-                free(s);      
+void check_letters(FILE *fp, FILE *fpIn){
+        int cap = 20;
+	int len = 0;
+        char *s = (char *) malloc (cap * sizeof (char));
+	if (!s){
+                printf("Memory allocation failed\n");
+                return; /* something failed w/allocation */ 
         }
-        else if (isdigit(c)) { /* we have a digit: 0...9 */
+        while (isalpha(c)) {
+	        if (len + 1 >= cap){ /* allocate more space if needed */
+	        	cap = cap + 20;
+	        	s = (char *) realloc(s, cap * sizeof (char));
+		}
+                s[len] = c;
+                len++;
+                c = getc(fpIn);
+        }
+        if (strcmp(s, "program") == 0)
+                emit_token(fp, "PROGRAM");
+        else if (strcmp(s, "begin") == 0)
+                emit_token(fp, "BEGIN");
+        else if (strcmp(s, "end") == 0)
+                emit_token(fp, "END");
+        else if (strcmp(s, "int") == 0)
+                emit_token(fp, "INT-TYPE");
+        else if (strcmp(s, "float") == 0)
+                emit_token(fp, "FLOAT-TYPE");
+        else if (strcmp(s, "if") == 0)
+                emit_token(fp, "IF");
+        else if (strcmp(s, "else") == 0)
+                emit_token(fp, "ELSE");
+        else if (strcmp(s, "while") == 0)
+                emit_token(fp, "WHILE");
+        else
+                emit_token(fp, "ID");
+        free(s);      
+}
+
+void check_digits(FILE *fp, FILE *fpIn){
+        int inum = 0;
+                float fnum;
+                float decPlace = 0.1;
                 while (isdigit(c)) {
                         /* we have a number */
                         inum = inum * 10 + (c - 48);
@@ -87,110 +197,17 @@ int main(int argc, char **argv) {
                                         decPlace /= 10;
                                         c = getc(fpIn);
                                 }
-                                emit_token(fp, "FLOAT");
+                                emit_token(fp, "FLOAT-CONST");
                         }
                         else{
-                                emit_token(fp, "INT");
+                                emit_token(fp, "INT-CONST");
                                 emit_token(fp, "UNDEF");
                         }
                         
                 }
                 else
-                        emit_token(fp, "INT");
-        }
-        else if (c == ';'){
-                emit_token(fp, "STMT-END");
-                c = getc(fpIn);
-        }
-        else if (c == '&'){
-                c = getc(fpIn);
-                if (c == '&'){
-                        emit_token(fp, "AND");
-                        c = getc(fpIn);
-                }
-                else{
-                        emit_token(fp, "UNDEF");
-                }
-        }
-        else if (c == '|'){
-                c = getc(fpIn);
-                if (c == '|'){
-                        emit_token(fp, "OR");
-                        c = getc(fpIn);
-                }
-                else{
-                        emit_token(fp, "UNDEF");
-                }
-        }
-        else if (c == '+' || c == '-'){
-                emit_token(fp, "ADD-OP");
-                c = getc(fpIn);
-        }
-        else if (c == '*' || c == '/' || c == '%'){
-                emit_token(fp, "MULT-OP");
-                c = getc(fpIn);
-        }
-        else if (c == '='){
-                emit_token(fp, "EQ-OP");
-                c = getc(fpIn);
-        }
-        else if (c == '!'){
-                c = getc(fpIn);
-                if (c == '='){
-                        emit_token(fp, "EQ-OP");
-                        c = getc(fpIn);
-                }
-                else{
-                        emit_token(fp, "UNDEF");
-                }
-        }
-        else if (c == '<' || c == '>'){
-                emit_token(fp, "RELATIONAL-OP");
-                c = getc(fpIn);
-                if (c == '='){
-                        c = getc(fpIn);
-                }
-        }
-        else if (c == ':'){
-                c = getc(fpIn);
-                if (c == '='){
-                        emit_token(fp, "ASSIGNMENT-OP");
-                        c = getc(fpIn);
-                }
-                else{
-                        emit_token(fp, "UNDEF");
-                }
-        }
-        else if (c == '('){
-                emit_token(fp, "OPEN-PAREN");
-                c = getc(fpIn);
-        }
-        else if (c == ')'){
-                emit_token(fp, "CLOSE-PAREN");
-                c = getc(fpIn);
-        }
-        else if (c == ','){
-                emit_token(fp, "COMMA");
-                c = getc(fpIn);
-        }
-        else if (c == '\n'){
-                emit_token(fp, "endl");
-                c = getc(fpIn);
-        }
-        else if (isspace(c)){
-                c = getc(fpIn);
-        }
-        else { /* undefined character */
-                emit_token(fp, "UNDEF");
-                c = getc(fpIn);
-        }
-        }
-        fclose(fpIn);
-        fclose(fp);
-        print_output(outFile, argv[1]);
-        return 0;
+                        emit_token(fp, "INT-CONST");
 }
-
 
 void print_output(char *tokenFile, char *codeFile){
         FILE *fpTokens;
