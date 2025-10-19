@@ -44,7 +44,6 @@ int main(int argc, char **argv) {
                         len++;
                         c = getc(fpIn);
                 }
-                printf("read first word");
                 if (strcmp(s, "program") == 0)
                     emit_token(fp, "PROGRAM");
                 else if (strcmp(s, "begin") == 0)
@@ -52,9 +51,9 @@ int main(int argc, char **argv) {
                 else if (strcmp(s, "end") == 0)
                     emit_token(fp, "END");
                 else if (strcmp(s, "int") == 0)
-                    emit_token(fp, "INT");
+                    emit_token(fp, "INT-TYPE");
                 else if (strcmp(s, "float") == 0)
-                    emit_token(fp, "FLOAT");
+                    emit_token(fp, "FLOAT-TYPE");
                 else if (strcmp(s, "if") == 0)
                     emit_token(fp, "IF");
                 else if (strcmp(s, "else") == 0)
@@ -64,6 +63,115 @@ int main(int argc, char **argv) {
                 else
                     emit_token(fp, "ID");
                 free(s);      
+        }
+        else if (isdigit(c)) { /* we have a digit: 0...9 */
+                while (isdigit(c)) {
+                        /* we have a number */
+                        inum = inum * 10 + (c - 48);
+                        c = getc(fpIn);
+                }
+                if (c == '.') {
+                        /* we have a float */
+                        fnum = inum;
+                        c = getc(fpIn);
+                        if (isdigit(c)){
+                                while (isdigit(c)) {
+                                        fnum = fnum + (c-48) * decPlace;
+                                        decPlace /= 10;
+                                        c = getc(fpIn);
+                                }
+                                emit_token(fp, "FLOAT");
+                        }
+                        else{
+                                emit_token(fp, "INT");
+                                emit_token(fp, "UNDEF");
+                        }
+                        
+                }
+                else
+                        emit_token(fp, "INT");
+        }
+        else if (c == ';'){
+                emit_token(fp, "STMT-END");
+                c = getc(fpIn);
+        }
+        else if (c == '&'){
+                c = getc(fpIn);
+                if (c == '&'){
+                        emit_token(fp, "AND");
+                        c = getc(fpIn);
+                }
+                else{
+                        emit_token(fp, "UNDEF");
+                }
+        }
+        else if (c == '|'){
+                c = getc(fpIn);
+                if (c == '|'){
+                        emit_token(fp, "OR");
+                        c = getc(fpIn);
+                }
+                else{
+                        emit_token(fp, "UNDEF");
+                }
+        }
+        else if (c == '+' || c == '-'){
+                emit_token(fp, "ADD-OP");
+                c = getc(fpIn);
+        }
+        else if (c == '*' || c == '/' || c == '%'){
+                emit_token(fp, "MULT-OP");
+                c = getc(fpIn);
+        }
+        else if (c == '='){
+                emit_token(fp, "EQ-OP");
+                c = getc(fpIn);
+        }
+        else if (c == '!'){
+                c = getc(fpIn);
+                if (c == '='){
+                        emit_token(fp, "EQ-OP");
+                        c = getc(fpIn);
+                }
+                else{
+                        emit_token(fp, "UNDEF");
+                }
+        }
+        else if (c == '<' || c == '>'){
+                emit_token(fp, "RELATIONAL-OP");
+                c = getc(fpIn);
+                if (c == '='){
+                        c = getc(fpIn);
+                }
+        }
+        else if (c == ':'){
+                c = getc(fpIn);
+                if (c == '='){
+                        emit_token(fp, "ASSIGNMENT-OP");
+                        c = getc(fpIn);
+                }
+                else{
+                        emit_token(fp, "UNDEF");
+                }
+        }
+        else if (c == '('){
+                emit_token(fp, "OPEN-PAREN");
+                c = getc(fpIn);
+        }
+        else if (c == ')'){
+                emit_token(fp, "CLOSE-PAREN");
+                c = getc(fpIn);
+        }
+        else if (c == ','){
+                emit_token(fp, "COMMA");
+                c = getc(fpIn);
+        }
+        else if (isspace(c)){
+                c = getc(fpIn);
+        }
+        else { /* undefined character */
+                emit_token(fp, "UNDEF");
+                c = getc(fpIn);
         }
         }
 
