@@ -11,9 +11,15 @@
 # include <string.h>
 
 void emit_token(FILE *fpOut, char *name) {
-    fputs(name, fpOut);
-    fputc(' ', fpOut);
+        if (strcmp(name, "endl") == 0)
+            fputc('\n', fpOut);
+        else{
+                fputs(name, fpOut);
+                fputc(' ', fpOut);
+        }
 }
+
+void print_output(char *tokenFile, char *codeFile);
 
 int main(int argc, char **argv) {
     char c;
@@ -24,7 +30,8 @@ int main(int argc, char **argv) {
     fpIn = fopen(argv[1], "r");
     if (!fpIn) return 1; /* something failed w/opening file */
     FILE *fp;
-    fp = fopen("tokens.txt", "w");
+    char *outFile = "tokens.txt";
+    fp = fopen(outFile, "w");
     if (!fp) return 1; /* something failed w/opening file */
 
     c = getc(fpIn);
@@ -166,6 +173,10 @@ int main(int argc, char **argv) {
                 emit_token(fp, "COMMA");
                 c = getc(fpIn);
         }
+        else if (c == '\n'){
+                emit_token(fp, "endl");
+                c = getc(fpIn);
+        }
         else if (isspace(c)){
                 c = getc(fpIn);
         }
@@ -174,6 +185,47 @@ int main(int argc, char **argv) {
                 c = getc(fpIn);
         }
         }
+        fclose(fpIn);
+        fclose(fp);
+        print_output(outFile, argv[1]);
+        return 0;
+}
 
-    return 0;
+
+void print_output(char *tokenFile, char *codeFile){
+        FILE *fpTokens;
+        FILE *fpCode;
+        fpTokens = fopen(tokenFile, "r");
+        fpCode = fopen(codeFile, "r");
+        if (fpTokens && fpCode){
+                char charCode = fgetc(fpCode);
+                char charToken = fgetc(fpTokens);
+                while (charCode != EOF && charToken != EOF){
+                        printf("%c", charCode);
+                        charCode = fgetc(fpCode);
+                        while (charCode != '\n' && charCode != EOF){
+                                printf("%c", charCode);
+                                charCode = fgetc(fpCode);
+                        }
+                        if (charCode == '\n' || charCode == EOF){
+                                printf("\n");
+                                charCode = fgetc(fpCode);
+                        }
+                        printf("%c", charToken);
+                        charToken = fgetc(fpTokens);
+                        while (charToken != '\n' && charToken != EOF){
+                                printf("%c", charToken);
+                                charToken = fgetc(fpTokens);
+                        }
+                        if (charToken == '\n'){
+                                printf("\n");
+                                charToken = fgetc(fpTokens);
+                        }
+                        while(charToken == '\n' && charCode == '\n'){
+                                charCode = fgetc(fpCode);
+                                charToken = fgetc(fpTokens);
+                        }
+                        printf("\n");
+                }
+        }
 }
