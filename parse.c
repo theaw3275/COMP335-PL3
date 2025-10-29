@@ -1,6 +1,3 @@
-/* THIS IS THE EXAMPLE PARSER */
-
-
 /*
  * COMP 335, Fall 2025
  * littleParser.c
@@ -24,65 +21,136 @@
 
 #include<stdio.h>  /* for I/O */
 #include<ctype.h>  /* for isdigit() function */
+#include<stdlib.h> /* for malloc() function */
+#include<string.h> /* for strcmp() function */
 
-char token;        /* global (!) token */
+char* token;        /* global (!) token */
 
-void expr();
-void fact();
-void id();
-char nextToken();
+char *nextToken(FILE *fp);
+void program(FILE *fp);
+void compound_stmt(FILE *fp);
+int isTypeSpecifier();
+void declaration_list(FILE *fp);
+void statement_list(FILE *fp);
+void id (FILE *fp);
+void declaration(FILE *fp);
+void type_specifier(FILE *fp);
+void init_dec_list(FILE *fp);
 
 int main() {
-   token = nextToken();
-   expr();
+   token = (char *) malloc (20 * sizeof (char));
+   /* open the token file */
+   FILE *fp;
+   fp = fopen("tokens.txt", "r");
+   if (!fp){
+      printf("Error with scanner: tokens.txt failed to open\n");
+      return 1;
+   }
+   /* get first token */
+   token = nextToken(fp);
+   printf("TOKEN: %s\n", token);
+   program(fp);
    printf ("\nCompilation done\n");
 
    return 0;
 }
 
-/* this represents the scanner */
-char nextToken () {
-   token = getc(stdin);
-   while (token == ' ')  /* skip over whitespace */
-      token = getc(stdin);
+char* nextToken(FILE *fp){
+   fscanf(fp, "%s", token);
    return token;
 }
 
-void expr () {   
-   fact ();
-   while (token == '+') {
-      printf ("%c", token);
-      token = nextToken();
-      fact ();
+void program(FILE *fp){
+   if(strcmp(token, "PROGRAM") != 0){
+      printf("Error: PROGRAM expected\n");
    }
-   if (token != '\n')
-      /* What you'll want here is a call to an error function,
-       * passing to it an error code and the location (position in
-       * the line). At some point (after an input '\n' for example), use
-       * this information to produce a good message.
-       */
-      printf ("\nERROR - incorrect operator %c\n", token);
+   nextToken(fp);
+   id(fp);
+   if(strcmp(token, "(") == 0){
+      nextToken(fp);
+      if(strcmp(token, ")") == 0){
+         nextToken(fp);
+         compound_stmt(fp);
+      } else {
+         printf("Error: ) expected\n");
+      }
+   } else {
+      printf("Error: ( expected\n");
+   }
+   /* the end! */
 }
 
-void fact () {
-   id ();
-   while (token == '*') {
-      printf ("%c", token);
-      token = nextToken();
-      id();
+void compound_stmt(FILE *fp){
+   if(strcmp(token, "BEGIN") != 0){
+      printf("Error: BEGIN expected\n");
+   }
+   nextToken(fp);
+   if(isTypeSpecifier()){
+      declaration_list(fp);
+      nextToken(fp);
+      if (strcmp(token, "END") != 0){
+         statement_list(fp);
+      }
+   } else {
+      statement_list(fp);
+   }
+   nextToken(fp);
+   if(strcmp(token, "END") != 0){
+      printf("Error: END expected\n");
+   }
+   nextToken(fp);
+}
+
+int isTypeSpecifier(){
+   if(strcmp(token, "INT-TYPE") == 0 || strcmp(token, "FLOAT-TYPE") == 0){
+      return 1;
+   }
+   return 0;
+}
+
+void declaration_list(FILE *fp){
+   printf("In declaration_list\n");
+   declaration(fp);
+   while(isTypeSpecifier()){
+      declaration(fp);
    }
 }
 
-void id() {
-   printf ("%c", token);
-   if (token == 'A')
-      token = nextToken ();
-   else if (token == 'B')
-      token = nextToken ();
-   else if (token == 'C')
-      token = nextToken ();
-   else if (token == '\n')
-      printf ("\nERROR - missing ID\n");
-   else
-      printf ("\nERROR - no matching ID %c\n", token);
+void declaration(FILE *fp){
+   type_specifier(fp);
+   init_dec_list(fp);
+   if (strcmp(token, "STMT-END") != 0){
+      printf("Error: ; expected\n");
+   }
+   nextToken(fp);
+}
+
+void type_specifier(FILE *fp){
+   printf("Type specifier is: %s\n", token);
+   if(!isTypeSpecifier()){
+      printf("Error: Type specifier expected\n");
+      /* ADD MORE (maybe?)!!!! WE CARE WHICH TYPE SPEC */
+   }
+   nextToken(fp);
+}
+
+void init_dec_list(FILE *fp){
+   id(fp);
+   while (strcmp(token, "COMMA") == 0){
+      nextToken(fp);
+      id(fp);
+   }
+}
+
+void statement_list(FILE *fp){
+   printf("In statement_list\n");
+   nextToken(fp);
+}
+
+void id (FILE *fp){
+   printf("ID is: %s\n", token);
+   if(strcmp(token, "ID") != 0){
+      printf("Error: ID expected\n");
+   }
+   nextToken(fp);
 }

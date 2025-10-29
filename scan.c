@@ -158,11 +158,11 @@ int main(int argc, char **argv) {
                         }
                 }
                 else if (c == '('){
-                        emit_token(fp, "OPEN-PAREN");
+                        emit_token(fp, "(");
                         c = getc(fpIn);
                 }
                 else if (c == ')'){
-                        emit_token(fp, "CLOSE-PAREN");
+                        emit_token(fp, ")");
                         c = getc(fpIn);
                 }
                 else if (c == ','){
