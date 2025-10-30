@@ -1,21 +1,19 @@
 /*
+ * TheGuyCo
+ * Thea West and Guy Crickmer
  * COMP 335, Fall 2025
- * littleParser.c
+ * parse.c
  *
  * Description: 
- * Implements little syntax analyzer for EBNF:
- * <expr> --> <fact> | {+ <fact>}*
- * <fact> --> <id> | {* <id>}*
- * <id> --> A | B | C
+ * TO DO!!!!!!!!
  *
  * Input: 
- * An expression on standard input (keyboard)
+ * The tokens.txt file produced by scan.c
  *
  * Output:
  * An error message is produced for any syntax error in the input 
  * expression. A message is displayed when scanning is complete.
  *
- * Note: "exp" has been changed to "expr" because exp is a built-in function.
  */
 
 
@@ -60,6 +58,7 @@ char* nextToken(FILE *fp){
    return token;
 }
 
+/* Program */
 void program(FILE *fp){
    if(strcmp(token, "PROGRAM") != 0){
       printf("Error: PROGRAM expected\n");
@@ -80,6 +79,7 @@ void program(FILE *fp){
    /* the end! */
 }
 
+/* Compound Statement */
 void compound_stmt(FILE *fp){
    if(strcmp(token, "BEGIN") != 0){
       printf("Error: BEGIN expected\n");
@@ -101,6 +101,9 @@ void compound_stmt(FILE *fp){
    nextToken(fp);
 }
 
+/* Helper for type_specifier(), compound_stmt()
+ * returns 1 (true) if token == FLOAT or INT 
+ * returns 0 otherwise */
 int isTypeSpecifier(){
    if(strcmp(token, "INT-TYPE") == 0 || strcmp(token, "FLOAT-TYPE") == 0){
       return 1;
@@ -108,6 +111,7 @@ int isTypeSpecifier(){
    return 0;
 }
 
+/* Declaration List*/
 void declaration_list(FILE *fp){
    printf("In declaration_list\n");
    declaration(fp);
@@ -116,6 +120,7 @@ void declaration_list(FILE *fp){
    }
 }
 
+/* Declaration */
 void declaration(FILE *fp){
    type_specifier(fp);
    init_dec_list(fp);
@@ -125,6 +130,10 @@ void declaration(FILE *fp){
    nextToken(fp);
 }
 
+/* Type Specifier 
+   may need to edit:
+   currently doesn't know specific type, only if FLOAT or INT 
+*/
 void type_specifier(FILE *fp){
    printf("Type specifier is: %s\n", token);
    if(!isTypeSpecifier()){
@@ -134,6 +143,7 @@ void type_specifier(FILE *fp){
    nextToken(fp);
 }
 
+/* Initialized Declarator List */
 void init_dec_list(FILE *fp){
    id(fp);
    while (strcmp(token, "COMMA") == 0){
@@ -142,13 +152,14 @@ void init_dec_list(FILE *fp){
    }
 }
 
+/* TODO!! */
 void statement_list(FILE *fp){
    printf("In statement_list\n");
    nextToken(fp);
 }
 
+/* ID */
 void id (FILE *fp){
-   printf("ID is: %s\n", token);
    if(strcmp(token, "ID") != 0){
       printf("Error: ID expected\n");
    }
