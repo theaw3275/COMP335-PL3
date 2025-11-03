@@ -24,7 +24,7 @@
 
 char* token;        /* global (!) token */
 
-char *nextToken(FILE *fp);
+int nextToken(FILE *fp);
 void program(FILE *fp);
 void compound_stmt(FILE *fp);
 int isTypeSpecifier();
@@ -52,18 +52,17 @@ void expression_stmt(FILE *fp);
 void expression(FILE *fp);
 
 
-int main() {
+int main(int argc, char **argv) {
    token = (char *) malloc (20 * sizeof (char));
    /* open the token file */
    FILE *fp;
-   fp = fopen("tokens.txt", "r");
+   fp = fopen(argv[1], "r");
    if (!fp){
       printf("Error with scanner: tokens.txt failed to open\n");
       return 1;
    }
    /* get first token */
-   token = nextToken(fp);
-   printf("TOKEN: %s\n", token);
+   nextToken(fp);
    program(fp);
    printf ("\nCompilation done\n");
 
@@ -72,9 +71,172 @@ int main() {
 
 /* TODO: change this so it calls scan.c */
 /* Get Next Token from File (updates global) */
-char* nextToken(FILE *fp){
-   fscanf(fp, "%s", token);
-   return token;
+int nextToken(FILE *fp){
+    char c = getc(fp);
+    int putbackQ = 1;
+    if (isalpha(c)) { /* we have a letter: abc...xyzABC...XYZ */
+        int cap = 20;
+        int len = 0;
+        char *s = (char *) malloc (cap * sizeof (char));
+        if (!s){
+            printf("Memory allocation failed\n");
+            free(s);
+            return 1; /* something failed w/allocation */
+        }
+        else {
+            while (isalpha(c)) {
+                if (len + 1 >= cap) { /* allocate more space if needed */
+                    cap = cap + 20;
+                    s = (char *) realloc(s, cap * sizeof(char));
+                }
+                s[len] = c;
+                len++;
+                s[len] = '\0';
+                c = getc(fp);
+            }
+            if (strcmp(s, "program") == 0)
+                token = "PROGRAM";
+            else if (strcmp(s, "begin") == 0)
+                token = "BEGIN";
+            else if (strcmp(s, "end") == 0)
+                token = "END";
+            else if (strcmp(s, "int") == 0)
+                token = "INT-TYPE";
+            else if (strcmp(s, "float") == 0)
+                token = "FLOAT-TYPE";
+            else if (strcmp(s, "if") == 0)
+                token = "IF";
+            else if (strcmp(s, "else") == 0)
+                token = "ELSE";
+            else if (strcmp(s, "while") == 0)
+                token = "WHILE";
+            else
+                token = "ID";
+            free(s);
+        }
+    }
+    else if (isdigit(c)) { /* we have a digit: 0...9 */
+        int inum = 0;
+        float fnum;
+        float decPlace = 0.1;
+        while (isdigit(c)) {
+            /* we have a number */
+            inum = inum * 10 + (c - 48);
+            c = getc(fp);
+        }
+        if (c == '.') {
+            /* we have a float */
+            fnum = inum;
+            c = getc(fp);
+            if (isdigit(c)){
+                while (isdigit(c)) {
+                    fnum = fnum + (c-48) * decPlace;
+                    decPlace /= 10;
+                    c = getc(fp);
+                }
+                token = "FLOAT-CONST";
+            }
+            else{
+                token = "INT-CONST";
+            }
+        }
+        else {
+            token = "INT-CONST";
+        }
+    }
+    else if (c == ';'){
+        token = "STMT-END";
+        c = getc(fp);
+    }
+    else if (c == '&'){
+        c = getc(fp);
+        if (c == '&'){
+            token = "AND";
+            c = getc(fp);
+        }
+        else{
+            token = "UNDEF";
+        }
+    }
+    else if (c == '|'){
+        c = getc(fp);
+        if (c == '|'){
+            token = "OR";
+            c = getc(fp);
+        }
+        else{
+            token = "UNDEF";
+        }
+    }
+    else if (c == '+' || c == '-'){
+        token = "ADD-OP";
+        c = getc(fp);
+    }
+    else if (c == '*' || c == '/' || c == '%'){
+        token = "MULT-OP";
+        c = getc(fp);
+    }
+    else if (c == '='){
+        token = "EQ-OP";
+        c = getc(fp);
+    }
+    else if (c == '!'){
+        c = getc(fp);
+        if (c == '='){
+            token = "EQ-OP";
+            c = getc(fp);
+        }
+        else{
+            token = "UNDEF";
+        }
+    }
+    else if (c == '<' || c == '>'){
+        token = "RELATIONAL-OP";
+        c = getc(fp);
+        if (c == '='){
+            c = getc(fp);
+        }
+    }
+    else if (c == ':'){
+        c = getc(fp);
+        if (c == '='){
+            token = "ASSIGNMENT-OP";
+            c = getc(fp);
+        }
+        else{
+            token = "UNDEF";
+        }
+    }
+    else if (c == '('){
+        token = "(";
+        c = getc(fp);
+    }
+    else if (c == ')'){
+        token = ")";
+        c = getc(fp);
+    }
+    else if (c == ','){
+        token = "COMMA";
+        c = getc(fp);
+    }
+    else if (isspace(c)){
+        putbackQ = 0;
+        nextToken(fp);
+    }
+    else { /* undefined character */
+        token = "UNDEF";
+        c = getc(fp);
+    }
+    if (putbackQ == 1) {
+        ungetc(c, fp);
+        printf("TOKEN: %s\n", token);
+    }
+    if (c == EOF){
+        return 1;
+    }
+    else {
+        return 0;
+    }
 }
 
 /* Program */
@@ -106,7 +268,6 @@ void compound_stmt(FILE *fp){
    nextToken(fp);
    if(isTypeSpecifier()){
       declaration_list(fp);
-      nextToken(fp);
       if (strcmp(token, "END") != 0){
          statement_list(fp);
       }
@@ -137,15 +298,18 @@ void declaration_list(FILE *fp){
    while(isTypeSpecifier()){
       declaration(fp);
    }
+   printf("Exiting declaration_list\n");
 }
 
 /* Declaration */
 void declaration(FILE *fp){
+   printf("In declaration\n");
    type_specifier(fp);
    init_dec_list(fp);
    if (strcmp(token, "STMT-END") != 0){
       printf("Error: ; expected\n");
    }
+   printf("Exiting declaration\n");
    nextToken(fp);
 }
 
@@ -164,6 +328,7 @@ void type_specifier(FILE *fp){
 
 /* Initialized Declarator List */
 void init_dec_list(FILE *fp){
+   printf("In init_dec_list\n");
    id(fp);
    while (strcmp(token, "COMMA") == 0){
       nextToken(fp);
@@ -315,7 +480,7 @@ void paren_exp(FILE *fp){
       printf("Error: ( expected\n");
    }
    nextToken(fp);
-   expression(fp); /* TODO: does this end w/nextToken? */
+   conditional_exp(fp); /* TODO: does this end w/nextToken? */
    if(strcmp(token, ")") != 0){
       printf("Error: ) expected\n");
    }

@@ -4,7 +4,7 @@ program main()
       int myInt, yourInt;
 
       myInt := 45;
-      yourInt := yourInt * myInt;
+      yourInt := (yourInt * myInt);
 
       if (myFloat < yourInt)
          begin

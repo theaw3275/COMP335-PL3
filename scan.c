@@ -169,10 +169,10 @@ int main(int argc, char **argv) {
                         emit_token(fp, "COMMA");
                         c = getc(fpIn);
                 }
-                else if (c == '\n'){
+                /*else if (c == '\n'){
                         emit_token(fp, "endl");
                         c = getc(fpIn);
-                }
+                }*/
                 else if (isspace(c)){
                         c = getc(fpIn);
                 }
@@ -183,17 +183,13 @@ int main(int argc, char **argv) {
         }
         fclose(fpIn);
         fclose(fp);
-        print_output(outFile, argv[1]);
+        /*print_output(outFile, argv[1]);*/
         return 0;
 }
 
 void emit_token(FILE *fpOut, char *name) {
-        if (strcmp(name, "endl") == 0)
-            fputc('\n', fpOut);
-        else{
-                fputs(name, fpOut);
-                fputc(' ', fpOut);
-        }
+        fputs(name, fpOut);
+        fputc(' ', fpOut);
 }
 
 void print_output(char *tokenFile, char *codeFile){
