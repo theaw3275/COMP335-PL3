@@ -53,6 +53,8 @@ int main() {
    return 0;
 }
 
+/* TODO: change this so it calls scan.c */
+/* Get Next Token from File (updates global) */
 char* nextToken(FILE *fp){
    fscanf(fp, "%s", token);
    return token;
@@ -94,7 +96,7 @@ void compound_stmt(FILE *fp){
    } else {
       statement_list(fp);
    }
-   nextToken(fp);
+   /* nextToken(fp); */
    if(strcmp(token, "END") != 0){
       printf("Error: END expected\n");
    }
@@ -155,7 +157,10 @@ void init_dec_list(FILE *fp){
 /* TODO!! */
 void statement_list(FILE *fp){
    printf("In statement_list\n");
-   nextToken(fp);
+   /* Conditional Stmt */
+   while (strcmp(token, "END") != 0){
+      statement(fp);
+   }
 }
 
 /* ID */
