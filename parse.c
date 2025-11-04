@@ -69,172 +69,171 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-/* TODO: change this so it calls scan.c */
 /* Get Next Token from File (updates global) */
 int nextToken(FILE *fp){
     char c = getc(fp);
-    int putbackQ = 1;
-    if (isalpha(c)) { /* we have a letter: abc...xyzABC...XYZ */
-        int cap = 20;
-        int len = 0;
-        char *s = (char *) malloc (cap * sizeof (char));
-        if (!s){
-            printf("Memory allocation failed\n");
-            free(s);
-            return 1; /* something failed w/allocation */
-        }
-        else {
-            while (isalpha(c)) {
-                if (len + 1 >= cap) { /* allocate more space if needed */
-                    cap = cap + 20;
-                    s = (char *) realloc(s, cap * sizeof(char));
-                }
-                s[len] = c;
-                len++;
-                s[len] = '\0';
-                c = getc(fp);
-            }
-            if (strcmp(s, "program") == 0)
-                token = "PROGRAM";
-            else if (strcmp(s, "begin") == 0)
-                token = "BEGIN";
-            else if (strcmp(s, "end") == 0)
-                token = "END";
-            else if (strcmp(s, "int") == 0)
-                token = "INT-TYPE";
-            else if (strcmp(s, "float") == 0)
-                token = "FLOAT-TYPE";
-            else if (strcmp(s, "if") == 0)
-                token = "IF";
-            else if (strcmp(s, "else") == 0)
-                token = "ELSE";
-            else if (strcmp(s, "while") == 0)
-                token = "WHILE";
-            else
-                token = "ID";
-            free(s);
-        }
-    }
-    else if (isdigit(c)) { /* we have a digit: 0...9 */
-        int inum = 0;
-        float fnum;
-        float decPlace = 0.1;
-        while (isdigit(c)) {
-            /* we have a number */
-            inum = inum * 10 + (c - 48);
-            c = getc(fp);
-        }
-        if (c == '.') {
-            /* we have a float */
-            fnum = inum;
-            c = getc(fp);
-            if (isdigit(c)){
-                while (isdigit(c)) {
-                    fnum = fnum + (c-48) * decPlace;
-                    decPlace /= 10;
-                    c = getc(fp);
-                }
-                token = "FLOAT-CONST";
-            }
-            else{
-                token = "INT-CONST";
-            }
-        }
-        else {
-            token = "INT-CONST";
-        }
-    }
-    else if (c == ';'){
-        token = "STMT-END";
-        c = getc(fp);
-    }
-    else if (c == '&'){
-        c = getc(fp);
-        if (c == '&'){
-            token = "AND";
-            c = getc(fp);
-        }
-        else{
-            token = "UNDEF";
-        }
-    }
-    else if (c == '|'){
-        c = getc(fp);
-        if (c == '|'){
-            token = "OR";
-            c = getc(fp);
-        }
-        else{
-            token = "UNDEF";
-        }
-    }
-    else if (c == '+' || c == '-'){
-        token = "ADD-OP";
-        c = getc(fp);
-    }
-    else if (c == '*' || c == '/' || c == '%'){
-        token = "MULT-OP";
-        c = getc(fp);
-    }
-    else if (c == '='){
-        token = "EQ-OP";
-        c = getc(fp);
-    }
-    else if (c == '!'){
-        c = getc(fp);
-        if (c == '='){
-            token = "EQ-OP";
-            c = getc(fp);
-        }
-        else{
-            token = "UNDEF";
-        }
-    }
-    else if (c == '<' || c == '>'){
-        token = "RELATIONAL-OP";
-        c = getc(fp);
-        if (c == '='){
-            c = getc(fp);
-        }
-    }
-    else if (c == ':'){
-        c = getc(fp);
-        if (c == '='){
-            token = "ASSIGNMENT-OP";
-            c = getc(fp);
-        }
-        else{
-            token = "UNDEF";
-        }
-    }
-    else if (c == '('){
-        token = "(";
-        c = getc(fp);
-    }
-    else if (c == ')'){
-        token = ")";
-        c = getc(fp);
-    }
-    else if (c == ','){
-        token = "COMMA";
-        c = getc(fp);
-    }
-    else if (isspace(c)){
-        putbackQ = 0;
-        nextToken(fp);
-    }
-    else { /* undefined character */
-        token = "UNDEF";
-        c = getc(fp);
-    }
-    if (putbackQ == 1) {
-        ungetc(c, fp);
-        printf("TOKEN: %s\n", token);
-    }
     if (c == EOF){
         return 1;
     }
     else {
+        int putbackQ = 1;
+        if (isalpha(c)) { /* we have a letter: abc...xyzABC...XYZ */
+            int cap = 20;
+            int len = 0;
+            char *s = (char *) malloc (cap * sizeof (char));
+            if (!s){
+                printf("Memory allocation failed\n");
+                free(s);
+                return 1; /* something failed w/allocation */
+            }
+            else {
+                while (isalpha(c)) {
+                    if (len + 1 >= cap) { /* allocate more space if needed */
+                        cap = cap + 20;
+                        s = (char *) realloc(s, cap * sizeof(char));
+                    }
+                    s[len] = c;
+                    len++;
+                    s[len] = '\0';
+                    c = getc(fp);
+                }
+                if (strcmp(s, "program") == 0)
+                    token = "PROGRAM";
+                else if (strcmp(s, "begin") == 0)
+                    token = "BEGIN";
+                else if (strcmp(s, "end") == 0)
+                    token = "END";
+                else if (strcmp(s, "int") == 0)
+                    token = "INT-TYPE";
+                else if (strcmp(s, "float") == 0)
+                    token = "FLOAT-TYPE";
+                else if (strcmp(s, "if") == 0)
+                    token = "IF";
+                else if (strcmp(s, "else") == 0)
+                    token = "ELSE";
+                else if (strcmp(s, "while") == 0)
+                    token = "WHILE";
+                else
+                    token = "ID";
+                free(s);
+            }
+        }
+        else if (isdigit(c)) { /* we have a digit: 0...9 */
+            int inum = 0;
+            float fnum;
+            float decPlace = 0.1;
+            while (isdigit(c)) {
+                /* we have a number */
+                inum = inum * 10 + (c - 48);
+                c = getc(fp);
+            }
+            if (c == '.') {
+                /* we have a float */
+                fnum = inum;
+                c = getc(fp);
+                if (isdigit(c)){
+                    while (isdigit(c)) {
+                        fnum = fnum + (c-48) * decPlace;
+                        decPlace /= 10;
+                        c = getc(fp);
+                    }
+                    token = "FLOAT-CONST";
+                }
+                else{
+                    token = "INT-CONST";
+                }
+            }
+            else {
+                token = "INT-CONST";
+            }
+        }
+        else if (c == ';'){
+            token = "STMT-END";
+            c = getc(fp);
+        }
+        else if (c == '&'){
+            c = getc(fp);
+            if (c == '&'){
+                token = "AND";
+                c = getc(fp);
+            }
+            else{
+                token = "UNDEF";
+            }
+        }
+        else if (c == '|'){
+            c = getc(fp);
+            if (c == '|'){
+                token = "OR";
+                c = getc(fp);
+            }
+            else{
+                token = "UNDEF";
+            }
+        }
+        else if (c == '+' || c == '-'){
+            token = "ADD-OP";
+            c = getc(fp);
+        }
+        else if (c == '*' || c == '/' || c == '%'){
+            token = "MULT-OP";
+            c = getc(fp);
+        }
+        else if (c == '='){
+            token = "EQ-OP";
+            c = getc(fp);
+        }
+        else if (c == '!'){
+            c = getc(fp);
+            if (c == '='){
+                token = "EQ-OP";
+                c = getc(fp);
+            }
+            else{
+                token = "UNDEF";
+            }
+        }
+        else if (c == '<' || c == '>'){
+            token = "RELATIONAL-OP";
+            c = getc(fp);
+            if (c == '='){
+                c = getc(fp);
+            }
+        }
+        else if (c == ':'){
+            c = getc(fp);
+            if (c == '='){
+                token = "ASSIGNMENT-OP";
+                c = getc(fp);
+            }
+            else{
+                token = "UNDEF";
+            }
+        }
+        else if (c == '('){
+            token = "(";
+            c = getc(fp);
+        }
+        else if (c == ')'){
+            token = ")";
+            c = getc(fp);
+        }
+        else if (c == ','){
+            token = "COMMA";
+            c = getc(fp);
+        }
+        else if (isspace(c)){
+            putbackQ = 0;
+            nextToken(fp);
+        }
+        else { /* undefined character */
+            token = "UNDEF";
+            c = getc(fp);
+        }
+        if (putbackQ == 1) {
+            ungetc(c, fp);
+            printf("TOKEN: %s\n", token);
+        }
         return 0;
     }
 }
@@ -294,23 +293,19 @@ int isTypeSpecifier(){
 
 /* Declaration List*/
 void declaration_list(FILE *fp){
-    printf("In declaration_list\n");
     declaration(fp);
     while(isTypeSpecifier()){
         declaration(fp);
     }
-    printf("Exiting declaration_list\n");
 }
 
 /* Declaration */
 void declaration(FILE *fp){
-    printf("In declaration\n");
     type_specifier(fp);
     init_dec_list(fp);
     if (strcmp(token, "STMT-END") != 0){
         printf("Error: ; expected\n");
     }
-    printf("Exiting declaration\n");
     nextToken(fp);
 }
 
@@ -319,7 +314,6 @@ void declaration(FILE *fp){
    currently doesn't know specific type, only if FLOAT or INT
 */
 void type_specifier(FILE *fp){
-    printf("Type specifier is: %s\n", token);
     if(!isTypeSpecifier()){
         printf("Error: Type specifier expected\n");
         /* ADD MORE (maybe?)!!!! WE CARE WHICH TYPE SPEC */
@@ -329,7 +323,6 @@ void type_specifier(FILE *fp){
 
 /* Initialized Declarator List */
 void init_dec_list(FILE *fp){
-    printf("In init_dec_list\n");
     id(fp);
     nextToken(fp);
     while (strcmp(token, "COMMA") == 0){
@@ -337,20 +330,16 @@ void init_dec_list(FILE *fp){
         id(fp);
         nextToken(fp);
     }
-    printf("Exiting init_dec_list\n");
 }
 
 /* Statement List */
 void statement_list(FILE *fp){
-    printf("In statement_list\n");
     while (strcmp(token, "END") != 0){
         statement(fp);
     }
-    printf("Exiting statement_list\n");
 }
 /* *********** */
 void statement(FILE *fp){
-    printf("In statement\n");
     /* compound statement */
     if (strcmp(token, "BEGIN") == 0){
         compound_stmt(fp); /* next built in */
@@ -371,11 +360,9 @@ void statement(FILE *fp){
     else {
         expression_stmt(fp);
     }
-    printf("Exiting statement\n");
 }
 
 void conditional_stmt(FILE *fp){
-    printf("In conditional_stmt\n");
     if(strcmp(token, "IF") != 0){
         printf("Error: IF expected\n");
     }
@@ -401,51 +388,41 @@ void conditional_stmt(FILE *fp){
         nextToken(fp);
         statement(fp);
     }
-    printf("Exiting conditional_stmt\n");
 }
 
 void conditional_exp(FILE *fp){
-    printf("In conditional_exp\n");
     logical_and_exp(fp);
     while(strcmp(token, "OR") == 0){
         nextToken(fp);
         logical_and_exp(fp);
     }
-    printf("Exiting conditional_exp\n");
 }
 
 void logical_and_exp(FILE *fp){
-    printf("In logical_and_exp\n");
     equality_exp(fp);
     while(strcmp(token, "AND") == 0){
         nextToken(fp);
         equality_exp(fp);
     }
-    printf("Exiting logical_and_exp\n");
 }
 
 void equality_exp(FILE *fp){
-    printf("In equality_exp\n");
     relational_exp(fp);
     while(strcmp(token, "EQ-OP") == 0){
         nextToken(fp);
         relational_exp(fp);
     }
-    printf("Exiting equality_exp\n");
 }
 
 void relational_exp(FILE *fp){
-    printf("In relational_exp\n");
     additive_exp(fp);
     while(strcmp(token, "RELATIONAL-OP") == 0){
         nextToken(fp);
         additive_exp(fp);
     }
-    printf("Exiting relational_exp\n");
 }
 
 void additive_exp(FILE *fp){
-    printf("In additive_exp\n");
     mult_exp(fp);
     while(strcmp(token, "ADD-OP") == 0){
         nextToken(fp);
@@ -454,26 +431,21 @@ void additive_exp(FILE *fp){
 }
 
 void mult_exp(FILE *fp){
-    printf("In mult_exp\n");
     unary_exp(fp);
     while(strcmp(token, "MULT-OP") == 0){
         nextToken(fp);
         unary_exp(fp);
     }
-    printf("Exiting mult_exp\n");
 }
 
 void unary_exp(FILE *fp){
-    printf("In unary_exp\n");
     if (strcmp(token, "ADD-OP") == 0){
         nextToken(fp);
     }
     primary_exp(fp);
-    printf("Exiting unary_exp\n");
 }
 
 void primary_exp(FILE *fp){
-    printf("In primary_exp\n");
     if(strcmp(token, "ID") == 0){
         id(fp);
         nextToken(fp);
@@ -485,11 +457,9 @@ void primary_exp(FILE *fp){
         printf("Error: Primary expression expected\n");
         nextToken(fp);
     }
-    printf("Exiting primary_exp\n");
 }
 
 void paren_exp(FILE *fp){
-    printf("In paren_exp\n");
     if(strcmp(token, "(") != 0){
         printf("Error: ( expected\n");
     }
@@ -498,12 +468,10 @@ void paren_exp(FILE *fp){
     if(strcmp(token, ")") != 0){
         printf("Error: ) expected\n");
     }
-    printf("Exiting paren_exp\n");
     nextToken(fp);
 }
 
 void while_stmt(FILE *fp){
-    printf("In while_stmt\n");
     if(strcmp(token, "WHILE") != 0){
         printf("Error: WHILE expected\n");
     }
@@ -518,11 +486,9 @@ void while_stmt(FILE *fp){
     }
     nextToken(fp);
     statement(fp);
-    printf("Exiting while_stmt\n");
 }
 
 void null_stmt(FILE *fp){
-    printf("In null_stmt\n");
     if(strcmp(token, "STMT-END") != 0){
         printf("Error: ; expected\n");
     }
@@ -530,35 +496,30 @@ void null_stmt(FILE *fp){
 }
 
 void expression_stmt(FILE *fp){
-    printf("In expression_stmt\n");
     expression(fp);
     if(strcmp(token, "STMT-END") != 0){
         printf("Error: ; expected\n");
     }
-    printf("Exiting expression_stmt\n");
     nextToken(fp);
 }
 
 void expression(FILE *fp){
-    printf("In expression\n");
     if (strcmp(token, "ID") != 0){
         printf("Error: ID expected\n");
     }
-    nextToken(fp);
-    if (strcmp(token, "ASSIGNMENT-OP") != 0){
-        printf("Error: := expected\n");
+    else {
+        nextToken(fp);
+        if (strcmp(token, "ASSIGNMENT-OP") != 0) {
+            printf("Error: := expected\n");
+        }
+        nextToken(fp);
+        unary_exp(fp);
     }
-    nextToken(fp);
-    unary_exp(fp);
-    printf("Exiting expression\n");
 }
 
 /* ID */
 void id (FILE *fp){
-    printf("In id\n");
     if(strcmp(token, "ID") != 0){
         printf("Error: ID expected\n");
     }
-    printf("Exiting id\n");
-    /*nextToken(fp);*/
 }
