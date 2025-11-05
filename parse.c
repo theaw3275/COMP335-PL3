@@ -269,7 +269,7 @@ int nextToken(FILE *fp){
             c = getc(fp);
         }
         else if (c == ')'){
-            token = CLOSE_PAREN;
+            token.t = CLOSE_PAREN;
             c = getc(fp);
         }
         else if (c == ','){
@@ -361,7 +361,7 @@ void compound_stmt(FILE *fp){
  * returns 1 (true) if token == FLOAT or INT
  * returns 0 otherwise */
 int isTypeSpecifier(){
-    if(token == INT_TYPE || token == FLOAT_TYPE){
+    if(token.t == INT_TYPE || token.t == FLOAT_TYPE){
         return 1;
     }
     return 0;
@@ -380,7 +380,7 @@ void declaration(FILE *fp){
     printf("Entered declaration...\n");
     type_specifier(fp);
     init_dec_list(fp);
-    if (token != STMT_END){
+    if (token.t != STMT_END){
         printf("Error: ; expected\n");
     }
     else{
@@ -404,7 +404,7 @@ void type_specifier(FILE *fp){
 void init_dec_list(FILE *fp){
     id(fp);
     nextToken(fp);
-    while (token == COMMA){
+    while (token.t == COMMA){
         nextToken(fp);
         id(fp);
         nextToken(fp);
@@ -413,7 +413,7 @@ void init_dec_list(FILE *fp){
 
 /* Statement List */
 void statement_list(FILE *fp){
-    while (token != END && token != EOF_TOKEN){
+    while (token.t != END && token.t != EOF_TOKEN){
         statement(fp);
     }
 }
@@ -430,7 +430,7 @@ void statement(FILE *fp){
         conditional_stmt(fp); /* next not built in (but ends with statement call) */
     }
         /* while statement */
-    else if (token == WHILE){
+    else if (token.t == WHILE){
         printf("Entered while...\n");
         nextToken(fp); /*Ignore the WHILE token*/
         while_stmt(fp); /* next not built in (but ends with statement call) */
