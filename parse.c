@@ -70,7 +70,6 @@ void compound_stmt(FILE *fp);
 int isTypeSpecifier();
 void declaration_list(FILE *fp);
 void statement_list(FILE *fp);
-void id (FILE *fp);
 void declaration(FILE *fp);
 void type_specifier(FILE *fp);
 void init_dec_list(FILE *fp);
@@ -135,7 +134,7 @@ int nextToken(FILE *fp){
             int len = 0;
             char *s = (char *) malloc (cap * sizeof (char));
             if (!s){
-                printf("Memory allocation failed\n");
+                errorFound("Memory allocation failed");
                 free(s);
                 return 1; /* something failed w/allocation */
             }
@@ -325,13 +324,12 @@ int nextToken(FILE *fp){
 /* Program */
 void program(FILE *fp){
     checkFor(fp, PROGRAM);
-    id(fp);
     nextToken(fp);
     checkFor(fp, OPEN_PAREN);
     checkFor(fp, CLOSE_PAREN);
     compound_stmt(fp);
     if (token.t != EOF_TOKEN){
-        printf("ERROR: Statements exist beyond end of program\n");
+        errorFound("ERROR: Statements exist beyond end of program\n");
     }
     /* the end! */
 }
@@ -349,7 +347,7 @@ void compound_stmt(FILE *fp){
     }
     /* nextToken(fp); */
     if(token.t != END){
-        printf("Error: END expected\n");
+        errorFound("Error: END expected\n");
     }
     else{
         nextToken(fp);
@@ -380,7 +378,7 @@ void declaration(FILE *fp){
     type_specifier(fp);
     init_dec_list(fp);
     if (token.t != STMT_END){
-        printf("Error: ; expected\n");
+        errorFound("Error: ; expected\n");
     }
     else{
         nextToken(fp);
@@ -393,7 +391,7 @@ void declaration(FILE *fp){
 */
 void type_specifier(FILE *fp){
     if(!isTypeSpecifier()){
-        printf("Error: Type specifier expected\n");
+        errorFound("Error: Type specifier expected\n");
         /* ADD MORE (maybe?)!!!! WE CARE WHICH TYPE SPEC */
     }
     nextToken(fp);
@@ -401,12 +399,10 @@ void type_specifier(FILE *fp){
 
 /* Initialized Declarator List */
 void init_dec_list(FILE *fp){
-    id(fp);
     nextToken(fp);
     while (token.t == COMMA){
         nextToken(fp);
-        id(fp);
-        nextToken(fp);
+        checkFor(fp, ID);
     }
 }
 
@@ -444,7 +440,7 @@ void statement(FILE *fp){
         expression_stmt(fp);
     }
     else{
-        printf("ERROR- Incorrect token.t here.\n");
+        errorFound("ERROR- Incorrect token.t here.\n");
         nextToken(fp);
         while (token.t != END && token.t != BEGIN && token.t != IF && token.t != WHILE && token.t != STMT_END && token.t != ID && token.t != EOF_TOKEN) {
             nextToken(fp);
@@ -459,7 +455,7 @@ void conditional_stmt(FILE *fp){
     checkFor(fp, CLOSE_PAREN);
     /* handles if there's nothing in the if part */
     if (token.t == ELSE){
-        printf("Error: Nothing in IF branch\n");
+        errorFound("Error: Nothing in IF branch\n");
         nextToken(fp);
     }
     else {
@@ -528,14 +524,13 @@ void unary_exp(FILE *fp){
 
 void primary_exp(FILE *fp){
     if(token.t == ID){
-        id(fp);
         nextToken(fp);
     } else if(token.t == INT_CONST || token.t == FLOAT_CONST){
         nextToken(fp);
     } else if(token.t == OPEN_PAREN){
         paren_exp(fp); /* ends with nextToken */
     } else {
-        printf("Error: Primary expression expected\n");
+        errorFound("Error: Primary expression expected\n");
         nextToken(fp);
     }
 }
@@ -561,7 +556,7 @@ void expression_stmt(FILE *fp){
 void expression(FILE *fp){
                                                             printf("Entered assignment...\n");
     if (token.t != ID){
-        printf("Error: ID expected\n");
+        errorFound("Error: ID expected\n");
         continueToSemicolon(fp);
     }
     else {
@@ -575,40 +570,33 @@ void expression(FILE *fp){
     }
 }
 
-/* ID */
-void id (FILE *fp){
-    if(token.t != ID){
-        printf("Error: ID expected\n"); /*Why?*/
-    }
-}
-
 int checkFor(FILE *fp, enum tokenType t){
     if (token.t != t) {
         /*DELETE THIS BEFORE SUBMITTING*/
         switch ((int)t){
-            case 0: printf("Error: EOF-TOKEN expected\n"); break;
-            case 1: printf("Error: PROGRAM expected\n"); break;
-            case 2: printf("Error: BEGIN expected\n"); break;
-            case 3: printf("Error: END expected\n"); break;
-            case 4: printf("Error: ID expected\n"); break;
-            case 5: printf("Error: IF expected\n"); break;
-            case 6: printf("Error: ELSE expected\n"); break;
-            case 7: printf("Error: WHILE expected\n"); break;
-            case 8: printf("Error: INT-TYPE expected\n"); break;
-            case 9: printf("Error: FLOAT-TYPE expected\n"); break;
-            case 10: printf("Error: INT VALUE expected\n"); break;
-            case 11: printf("Error: FLOAT VALUE expected\n"); break;
-            case 12: printf("Error: ; expected\n"); break;
-            case 13: printf("Error: ( expected\n"); break;
-            case 14: printf("Error: ) expected\n"); break;
-            case 15: printf("Error: && expected\n"); break;
-            case 16: printf("Error: || expected\n"); break;
-            case 17: printf("Error: + or - expected\n"); break;
-            case 18: printf("Error: * expected\n"); break;
-            case 19: printf("Error: = or != expected\n"); break;
-            case 20: printf("Error: > or < expected\n"); break;
-            case 21: printf("Error: := expected\n"); break;
-            case 22: printf("Error: , expected\n"); break;
+            case 0: errorFound("Error: EOF-TOKEN expected\n"); break;
+            case 1: errorFound("Error: PROGRAM expected\n"); break;
+            case 2: errorFound("Error: BEGIN expected\n"); break;
+            case 3: errorFound("Error: END expected\n"); break;
+            case 4: errorFound("Error: ID expected\n"); break;
+            case 5: errorFound("Error: IF expected\n"); break;
+            case 6: errorFound("Error: ELSE expected\n"); break;
+            case 7: errorFound("Error: WHILE expected\n"); break;
+            case 8: errorFound("Error: INT-TYPE expected\n"); break;
+            case 9: errorFound("Error: FLOAT-TYPE expected\n"); break;
+            case 10: errorFound("Error: INT VALUE expected\n"); break;
+            case 11: errorFound("Error: FLOAT VALUE expected\n"); break;
+            case 12: errorFound("Error: ; expected\n"); break;
+            case 13: errorFound("Error: ( expected\n"); break;
+            case 14: errorFound("Error: ) expected\n"); break;
+            case 15: errorFound("Error: && expected\n"); break;
+            case 16: errorFound("Error: || expected\n"); break;
+            case 17: errorFound("Error: + or - expected\n"); break;
+            case 18: errorFound("Error: * expected\n"); break;
+            case 19: errorFound("Error: = or != expected\n"); break;
+            case 20: errorFound("Error: > or < expected\n"); break;
+            case 21: errorFound("Error: := expected\n"); break;
+            case 22: errorFound("Error: , expected\n"); break;
             default: printf("How did you get this error message!?\n"); break;
         }
         /*STOP DELETING HERE*/
