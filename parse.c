@@ -64,22 +64,42 @@ void null_stmt(FILE *fp);
 void expression_stmt(FILE *fp);
 void expression(FILE *fp);
 struct anError* errorFound(char* message);
-void printErrors();
+void printErrors(FILE *fp);
 
 int main(int argc, char **argv) {
     token.t = (char *) malloc (20 * sizeof (char));
+    token.line = 1;
+    token.character = 1;
     /* open the token file */
     FILE *fp;
     fp = fopen(argv[1], "r");
     if (!fp){
-        printf("Error with scanner: tokens.txt failed to open\n");
+        printf("Error: .cm file failed to open\n");
         return 1;
     }
     /* get first token */
     nextToken(fp);
-    program(fp);
+    /*program(fp);*/
+
+    errorFound("test 1");
+    nextToken(fp);
+    errorFound("test 2");
+    nextToken(fp);
+    nextToken(fp);
+    nextToken(fp);
+    errorFound("test 3");
+    nextToken(fp);
+    errorFound("test 4");
     printf ("\nCompilation done\n");
-    printErrors();
+
+    /* close and reopen file for error printing */
+    fclose(fp);
+    fp = fopen(argv[1], "r");
+    if (!fp){
+        printf("Error: .cm file failed to open\n");
+        return 1;
+    }
+    printErrors(fp);
     return 0;
 }
 
@@ -237,6 +257,9 @@ int nextToken(FILE *fp){
             c = getc(fp);
         }
         else if (isspace(c)){
+            if (c == '\n') {
+                token.line++;
+            }
             putbackQ = 0;
             nextToken(fp);
         }
@@ -584,7 +607,7 @@ struct anError* errorFound(char* message){
     return first;
 }
 
-void printErrors() {
+void printErrors(FILE *fp) {
     printf("\n\nErrors found:\n");
     struct anError* current = errorFound("000");
     while (current != NULL) {
