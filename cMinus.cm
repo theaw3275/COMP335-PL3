@@ -1,15 +1,15 @@
-program main() 
+program main) 
    begin
       float myFloat;
       int myInt, yourInt;
 
-      myInt := 45;
+      myInt = 45;
       yourInt := (yourInt * myInt);
 
       if (myFloat < yourInt)
          begin
             int thisInt;
-            thisInt := (myInt + yourInt);
+            thisInt := (myInt + yourInt)
          end
       else
          yourInt := myInt;

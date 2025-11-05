@@ -96,7 +96,7 @@ void printErrors(FILE *fp);
 
 int main(int argc, char **argv) {
     token.line = 1;
-    token.character = 1;
+    token.character = -1; /* initialize character position (gets incremented by 1) */
     /* open the input file */
     FILE *fp;
     fp = fopen(argv[1], "r");
@@ -123,6 +123,7 @@ int main(int argc, char **argv) {
 /* Get Next Token from File (updates global) */
 int nextToken(FILE *fp){
     char c = getc(fp);
+    token.character++;
     if (c == EOF){
         token.t = EOF_TOKEN;
         return 1;
@@ -148,6 +149,7 @@ int nextToken(FILE *fp){
                     len++;
                     s[len] = '\0';
                     c = getc(fp);
+                    token.character++;
                 }
                 if (strcmp(s, "program") == 0)
                     token.t = PROGRAM;
@@ -178,16 +180,19 @@ int nextToken(FILE *fp){
                 /* we have a number */
                 inum = inum * 10 + (c - 48);
                 c = getc(fp);
+                token.character++;
             }
             if (c == '.') {
                 /* we have a float */
                 fnum = inum;
                 c = getc(fp);
+                token.character++;
                 if (isdigit(c)){
                     while (isdigit(c)) {
                         fnum = fnum + (c-48) * decPlace;
                         decPlace /= 10;
                         c = getc(fp);
+                        token.character++;
                     }
                     token.t = FLOAT_CONST;
                 }
@@ -202,12 +207,15 @@ int nextToken(FILE *fp){
         else if (c == ';'){
             token.t = STMT_END;
             c = getc(fp);
+            token.character++;
         }
         else if (c == '&'){
             c = getc(fp);
+            token.character++;
             if (c == '&'){
                 token.t = AND;
                 c = getc(fp);
+                token.character++;
             }
             else{
                 token.t = UNDEF;
@@ -215,9 +223,11 @@ int nextToken(FILE *fp){
         }
         else if (c == '|'){
             c = getc(fp);
+            token.character++;
             if (c == '|'){
                 token.t = OR;
                 c = getc(fp);
+                token.character++;
             }
             else{
                 token.t = UNDEF;
@@ -226,20 +236,25 @@ int nextToken(FILE *fp){
         else if (c == '+' || c == '-'){
             token.t = ADD_OP;
             c = getc(fp);
+            token.character++;
         }
         else if (c == '*' || c == '/' || c == '%'){
             token.t = MULT_OP;
             c = getc(fp);
+            token.character++;
         }
         else if (c == '='){
             token.t = EQ_OP;
             c = getc(fp);
+            token.character++;
         }
         else if (c == '!'){
             c = getc(fp);
+            token.character++;
             if (c == '='){
                 token.t = EQ_OP;
                 c = getc(fp);
+                token.character++;
             }
             else{
                 token.t = UNDEF;
@@ -248,15 +263,19 @@ int nextToken(FILE *fp){
         else if (c == '<' || c == '>'){
             token.t = RELATIONAL_OP;
             c = getc(fp);
+            token.character++;
             if (c == '='){
                 c = getc(fp);
+                token.character++;
             }
         }
         else if (c == ':'){
             c = getc(fp);
+            token.character++;
             if (c == '='){
                 token.t = ASSIGNMENT_OP;
                 c = getc(fp);
+                token.character++;
             }
             else{
                 token.t = UNDEF;
@@ -265,18 +284,22 @@ int nextToken(FILE *fp){
         else if (c == '('){
             token.t = OPEN_PAREN;
             c = getc(fp);
+            token.character++;
         }
         else if (c == ')'){
             token.t = CLOSE_PAREN;
             c = getc(fp);
+            token.character++;
         }
         else if (c == ','){
             token.t = COMMA;
             c = getc(fp);
+            token.character++;
         }
         else if (isspace(c)){
             if (c == '\n'){
                 token.line++;
+                token.character = -1;
             }
             putbackQ = 0;
             nextToken(fp);
@@ -284,6 +307,7 @@ int nextToken(FILE *fp){
         else { /* undefined character */
             token.t = UNDEF;
             c = getc(fp);
+            token.character++;
         }
         if (putbackQ == 1) {
             ungetc(c, fp);
@@ -324,7 +348,7 @@ int nextToken(FILE *fp){
 /* Program */
 void program(FILE *fp){
     checkFor(fp, PROGRAM);
-    nextToken(fp);
+    checkFor(fp, ID); /* main */
     checkFor(fp, OPEN_PAREN);
     checkFor(fp, CLOSE_PAREN);
     compound_stmt(fp);
@@ -440,7 +464,7 @@ void statement(FILE *fp){
         expression_stmt(fp);
     }
     else{
-        errorFound("ERROR- Incorrect token.t here.\n");
+        errorFound("ERROR- Incorrect token here.\n");
         nextToken(fp);
         while (token.t != END && token.t != BEGIN && token.t != IF && token.t != WHILE && token.t != STMT_END && token.t != ID && token.t != EOF_TOKEN) {
             nextToken(fp);
@@ -530,7 +554,7 @@ void primary_exp(FILE *fp){
     } else if(token.t == OPEN_PAREN){
         paren_exp(fp); /* ends with nextToken */
     } else {
-        errorFound("Error: Primary expression expected\n");
+        errorFound("Error: Variable, Int value, or Float value expected\n");
         nextToken(fp);
     }
 }
@@ -646,11 +670,31 @@ struct anError* errorFound(char* message){
 }
 
 void printErrors(FILE *fp) {
-    printf("\n\nErrors found:\n");
     struct anError* current = errorFound("000");
-    while (current != NULL) {
-        printf("%d: %s\n", current->line, current->message);
-        /* TODO: character stuff when we set that up */
-        current = current->ptr;
+
+    if (current == NULL) {
+        printf("No errors found.\n");
+        return;
+    }
+    printf("\n\nErrors found:\n");
+    int MAX_LINE_LENGTH = sizeof(char) * 256;
+    char buffer[MAX_LINE_LENGTH];
+    int lineNumber = 1;
+    while (fgets(buffer, MAX_LINE_LENGTH, fp) != NULL) {
+        if (current == NULL){
+            return;
+        }
+        if (lineNumber == current->line) {
+            printf("%3d: %s", current->line, buffer);
+            printf("  ");
+            int i;
+            for (i = 0; i < current->character; i++) {
+                printf(" ");
+            }
+            printf("^\n");
+            printf("%s\n", current->message);
+            current = current->ptr;
+        }
+        lineNumber++;
     }
 }
