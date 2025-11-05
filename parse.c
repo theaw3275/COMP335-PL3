@@ -89,14 +89,13 @@ void paren_exp(FILE *fp);
 void while_stmt(FILE *fp);
 void expression_stmt(FILE *fp);
 void expression(FILE *fp);
-void checkFor(FILE *fp, enum tokenType t);
+int checkFor(FILE *fp, enum tokenType t);
 void continueToSemicolon(FILE *fp);
 struct anError* errorFound(char* message);
 void printErrors(FILE *fp);
 
 
 int main(int argc, char **argv) {
-    token.t = (char *) malloc (20 * sizeof (char));
     token.line = 1;
     token.character = 1;
     /* open the input file */
@@ -358,7 +357,7 @@ void compound_stmt(FILE *fp){
 }
 
 /* Helper for type_specifier(), compound_stmt()
- * returns 1 (true) if token == FLOAT or INT
+ * returns 1 (true) if token.t == FLOAT or INT
  * returns 0 otherwise */
 int isTypeSpecifier(){
     if(token.t == INT_TYPE || token.t == FLOAT_TYPE){
@@ -432,7 +431,7 @@ void statement(FILE *fp){
         /* while statement */
     else if (token.t == WHILE){
         printf("Entered while...\n");
-        nextToken(fp); /*Ignore the WHILE token*/
+        nextToken(fp); /*Ignore the WHILE token.t*/
         while_stmt(fp); /* next not built in (but ends with statement call) */
     }
         /* null statement */
@@ -445,7 +444,7 @@ void statement(FILE *fp){
         expression_stmt(fp);
     }
     else{
-        printf("ERROR- Incorrect token here. (%d)\n", (int)token.t);
+        printf("ERROR- Incorrect token.t here.\n");
         nextToken(fp);
         while (token.t != END && token.t != BEGIN && token.t != IF && token.t != WHILE && token.t != STMT_END && token.t != ID && token.t != EOF_TOKEN) {
             nextToken(fp);
@@ -454,7 +453,6 @@ void statement(FILE *fp){
 }
 
 void conditional_stmt(FILE *fp){
-
     checkFor(fp, IF);
     checkFor(fp, OPEN_PAREN);
     conditional_exp(fp);
@@ -544,7 +542,7 @@ void primary_exp(FILE *fp){
 
 void paren_exp(FILE *fp){
     checkFor(fp, OPEN_PAREN);
-    conditional_exp(fp); /* TODO: does this end w/nextToken? */
+    conditional_exp(fp);
     checkFor(fp, CLOSE_PAREN);
 }
 
@@ -568,8 +566,12 @@ void expression(FILE *fp){
     }
     else {
         nextToken(fp);
-        checkFor(fp, ASSIGNMENT_OP);
-        unary_exp(fp);
+        if (checkFor(fp, ASSIGNMENT_OP) == 0) {
+            unary_exp(fp);
+        }
+        else{
+            continueToSemicolon(fp);
+        }
     }
 }
 
@@ -580,11 +582,40 @@ void id (FILE *fp){
     }
 }
 
-void checkFor(FILE *fp, enum tokenType t){
+int checkFor(FILE *fp, enum tokenType t){
     if (token.t != t) {
-        printf("Error: (%d) expected\n", (int)t);
+        /*DELETE THIS BEFORE SUBMITTING*/
+        switch ((int)t){
+            case 0: printf("Error: EOF-TOKEN expected\n"); break;
+            case 1: printf("Error: PROGRAM expected\n"); break;
+            case 2: printf("Error: BEGIN expected\n"); break;
+            case 3: printf("Error: END expected\n"); break;
+            case 4: printf("Error: ID expected\n"); break;
+            case 5: printf("Error: IF expected\n"); break;
+            case 6: printf("Error: ELSE expected\n"); break;
+            case 7: printf("Error: WHILE expected\n"); break;
+            case 8: printf("Error: INT-TYPE expected\n"); break;
+            case 9: printf("Error: FLOAT-TYPE expected\n"); break;
+            case 10: printf("Error: INT VALUE expected\n"); break;
+            case 11: printf("Error: FLOAT VALUE expected\n"); break;
+            case 12: printf("Error: ; expected\n"); break;
+            case 13: printf("Error: ( expected\n"); break;
+            case 14: printf("Error: ) expected\n"); break;
+            case 15: printf("Error: && expected\n"); break;
+            case 16: printf("Error: || expected\n"); break;
+            case 17: printf("Error: + or - expected\n"); break;
+            case 18: printf("Error: * expected\n"); break;
+            case 19: printf("Error: = or != expected\n"); break;
+            case 20: printf("Error: > or < expected\n"); break;
+            case 21: printf("Error: := expected\n"); break;
+            case 22: printf("Error: , expected\n"); break;
+            default: printf("How did you get this error message!?\n"); break;
+        }
+        /*STOP DELETING HERE*/
+        return 1;
     } else {
         nextToken(fp);
+        return 0;
     }
 }
 

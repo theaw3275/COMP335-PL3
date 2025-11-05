@@ -9,7 +9,7 @@ program main()
       if (myFloat < yourInt)
          begin
             int thisInt;
-            thisInt := (myInt + yourInt);
+            thisInt := (myInt + yourInt)
          end
       else
          yourInt := myInt;
