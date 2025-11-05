@@ -5,14 +5,17 @@
  * parse.c
  *
  * Description:
- * TO DO!!!!!!!!
+ * Take in a source file containing a program in the language C-, 
+ * determine if it is syntactically correct according to the C- BNF, 
+ * and print any errors. Errors are reported with line and 
+ * approximate character positions.
  *
  * Input:
- * The tokens.txt file produced by scan.c
+ * A source file containing a program in the language C-
  *
  * Output:
- * An error message is produced for any syntax error in the input
- * expression. A message is displayed when scanning is complete.
+ * A report of any syntax errors found in the source file. 
+ * Errors are reported with line and approximate character positions.
  *
  */
 
@@ -117,6 +120,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     printErrors(fp);
+    fclose(fp);
     return 0;
 }
 
@@ -311,35 +315,6 @@ int nextToken(FILE *fp){
         }
         if (putbackQ == 1) {
             ungetc(c, fp);
-
-            /*DELETE THIS BEFORE SUBMITTING*/
-            switch ((int)token.t){
-                case 0: printf("TOKEN: EOF-TOKEN\n"); break;
-                case 1: printf("TOKEN: PROGRAM\n"); break;
-                case 2: printf("TOKEN: BEGIN\n"); break;
-                case 3: printf("TOKEN: END\n"); break;
-                case 4: printf("TOKEN: ID\n"); break;
-                case 5: printf("TOKEN: IF\n"); break;
-                case 6: printf("TOKEN: ELSE\n"); break;
-                case 7: printf("TOKEN: WHILE\n"); break;
-                case 8: printf("TOKEN: INT-TYPE\n"); break;
-                case 9: printf("TOKEN: FLOAT-TYPE\n"); break;
-                case 10: printf("TOKEN: INT-CONST\n"); break;
-                case 11: printf("TOKEN: FLOAT-CONST\n"); break;
-                case 12: printf("TOKEN: STMT-END\n"); break;
-                case 13: printf("TOKEN: OPEN-PAREN\n"); break;
-                case 14: printf("TOKEN: CLOSE-PAREN\n"); break;
-                case 15: printf("TOKEN: AND\n"); break;
-                case 16: printf("TOKEN: OR\n"); break;
-                case 17: printf("TOKEN: ADD-OP\n"); break;
-                case 18: printf("TOKEN: MULT-OP\n"); break;
-                case 19: printf("TOKEN: EQ_OP\n"); break;
-                case 20: printf("TOKEN: RELATIONAL-OP\n"); break;
-                case 21: printf("TOKEN: ASSIGNMENT-OP\n"); break;
-                case 22: printf("TOKEN: COMMA\n"); break;
-                default: printf("TOKEN: UNDEF\n"); break;
-            }
-            /*STOP DELETING HERE*/
         }
         return 0;
     }
@@ -398,7 +373,6 @@ void declaration_list(FILE *fp){
 
 /* Declaration */
 void declaration(FILE *fp){
-    printf("Entered declaration...\n");
     type_specifier(fp);
     init_dec_list(fp);
     if (token.t != STMT_END){
@@ -423,7 +397,7 @@ void type_specifier(FILE *fp){
 
 /* Initialized Declarator List */
 void init_dec_list(FILE *fp){
-    nextToken(fp);
+    checkFor(fp, ID);
     while (token.t == COMMA){
         nextToken(fp);
         checkFor(fp, ID);
@@ -438,25 +412,21 @@ void statement_list(FILE *fp){
 }
 /* *********** */
 void statement(FILE *fp){
-                                         printf("Entered statement...\n");
     /* compound statement */
     if (token.t == BEGIN){
         compound_stmt(fp); /* next built in */
     }
         /* conditional statement */
     else if (token.t == IF){
-        printf("Entered conditional...\n");
         conditional_stmt(fp); /* next not built in (but ends with statement call) */
     }
         /* while statement */
     else if (token.t == WHILE){
-        printf("Entered while...\n");
         nextToken(fp); /*Ignore the WHILE token.t*/
         while_stmt(fp); /* next not built in (but ends with statement call) */
     }
         /* null statement */
     else if (token.t == STMT_END){
-        printf("Entered null...");
         nextToken(fp);
     }
         /* expression statement */
@@ -578,7 +548,6 @@ void expression_stmt(FILE *fp){
 }
 
 void expression(FILE *fp){
-                                                            printf("Entered assignment...\n");
     if (token.t != ID){
         errorFound("Error: ID expected\n");
         continueToSemicolon(fp);
@@ -621,7 +590,7 @@ int checkFor(FILE *fp, enum tokenType t){
             case 20: errorFound("Error: > or < expected\n"); break;
             case 21: errorFound("Error: := expected\n"); break;
             case 22: errorFound("Error: , expected\n"); break;
-            default: printf("How did you get this error message!?\n"); break;
+            default: errorFound("How did you get this error message!?\n"); break;
         }
         /*STOP DELETING HERE*/
         return 1;
@@ -632,11 +601,9 @@ int checkFor(FILE *fp, enum tokenType t){
 }
 
 void continueToSemicolon(FILE *fp){
-    printf("[[[Skipping...\n");
     while (token.t != STMT_END && token.t != EOF_TOKEN) {
         nextToken(fp);
     }
-    printf("... stopped skipping]]];\n");
 }
 
 
@@ -671,20 +638,16 @@ struct anError* errorFound(char* message){
 
 void printErrors(FILE *fp) {
     struct anError* current = errorFound("000");
-
     if (current == NULL) {
         printf("No errors found.\n");
         return;
     }
-    printf("\n\nErrors found:\n");
+    printf("\nErrors found:\n");
     int MAX_LINE_LENGTH = sizeof(char) * 256;
     char buffer[MAX_LINE_LENGTH];
     int lineNumber = 1;
     while (fgets(buffer, MAX_LINE_LENGTH, fp) != NULL) {
-        if (current == NULL){
-            return;
-        }
-        if (lineNumber == current->line) {
+        while (lineNumber == current->line) {
             printf("%3d: %s", current->line, buffer);
             printf("  ");
             int i;
@@ -693,6 +656,9 @@ void printErrors(FILE *fp) {
             }
             printf("^\n");
             printf("%s\n", current->message);
+            if (current->ptr == NULL){
+                return;
+            }
             current = current->ptr;
         }
         lineNumber++;
